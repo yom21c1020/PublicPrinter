@@ -20,7 +20,7 @@ let printer_ip;
 if(indev_flag) printer_ip = "192.168.0.170";
 else printer_ip = config.ip;
 
-let printer = ipp.printer("http://" + toString(printer_ip) + ":631/ipp/print");
+let printer = ipp.Printer("http://" + printer_ip + ":631/ipp/print");
 let buffer;
 
 try {
@@ -35,11 +35,15 @@ printer.execute("Print-Job", {
 //document_format should be changed
         "requesting-user-name": "user",
         "job-name": "Test",
-        "document-format": "application/pdf"
+        "document-format": "application/octet-stream"
     },
     data: buffer
 }, (err, res) => {
     if(err) console.log(err);
     else console.log(res);
+    
+	console.log(res['job-attributes-tag']);
+	let job_uri = res['job-attributes-tag']['job-uri'];
+
 });
 
