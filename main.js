@@ -1,30 +1,29 @@
 const ipp = require("ipp");
 const fs = require("fs");
+const {spawnSync} = require("child_process");
+require("dotenv").config();
 
-let indev_flag = true;
-let config;
+const printerIP = process.env.PRINTER_HOST;
+console.log("Printer IP: " + printerIP);
+const printer = ipp.Printer(`http://${printerIP}:631/ipp/print`);
+const fileName = "test.pdf";
 
-if(indev_flag) config = null;
-else {
-    try {
-        config = JSON.parse(fs.readFileSync("./config.json"));
-    } catch (e) {
-        config = null;
-        console.log("Error occured when parsing .config file: " + e);
-    }
-}
-
-
-let printer_ip;
-
-if(indev_flag) printer_ip = "192.168.0.170";
-else printer_ip = config.ip;
-
-let printer = ipp.Printer(`http://${printer_ip}:631/ipp/print`);
 let buffer;
 
+const convertPDFToURF = (fileName) => {
+    const pdf = fs.readFileSync(fileName);
+    const urf = spawnSync("cupsfilter", [
+        "-p", "slc515w.ppd",
+        "-m", "image/urf",
+        "-o", "media=iso_a4_210x297mm",
+        "-o", "print-scaling=auto",
+        "-" 
+   ], {input: pdf}).stdout;
+   return urf;
+}
+
 try {
-    buffer = fs.readFileSync("test.urf");
+    buffer = convertPDFToURF(fileName);
 } catch (e) {
     console.log("Error occured when opening pdf file: " + e);
 }
@@ -39,12 +38,10 @@ printer.execute("Print-Job", {
         "job-name": "Test-URF",
         "document-format": "image/urf"
     },
-    data: buffer
+    data: buffer,
 }, (err, res) => {
     if(err) console.log(err);
     else console.log(res);
     
 	console.log(res['job-attributes-tag']);
-
 });
-
